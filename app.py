@@ -63,25 +63,29 @@ def get_signature_by_user_id(user_id):
 
     return jsonify([ signature.to_json() for signature in signatures ])
 
-@app.route("/predict/<user_id>", methods=['GET', 'POST'])
-def predict(user_id):
+@app.route("/predict", methods=['GET', 'POST'])
+def predict():
+    user_service = UserService()
+    users = user_service.get_all_users()
+
     if request.method == 'GET':
-        return render_template('predict.html')
+        return render_template('predict.html', users=users)
 
     file = request.files['file_upload']
     filename = file.filename
     if filename is None:
-        return render_template('predict.html', has_error=True, error_message="File is empty")
+        return render_template('predict.html', users=users, has_error=True, error_message="File is empty")
 
     file.save(f"./temp/{secure_filename(filename)}")
     test_image = os.path.join(os.getcwd(), 'temp/' + filename)
 
+    user_id = request.form['user_select']
     signature_service = SignatureService()
     signatures = signature_service.get_by_user_id(user_id)
     genuine_images = [signature.path for signature in signatures]
 
     result = tensorflow_service.batch_predict(test_image, genuine_images)
-    return render_template('predict.html', show_result=True, probability=str(round(result * 100, 2)))
+    return render_template('predict.html', users=users, show_result=True, probability=str(round(result * 100, 2)))
 
 if __name__ == 'app':
     app.run()

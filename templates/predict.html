@@ -8,15 +8,17 @@
 </head>
 <body>
     <div class="container">
-{#        <div class="row">#}
-{#            <div class="col">#}
-{#                <h1>Upload file for verify signatures</h1>#}
-{#            </div>#}
-{#        </div>#}
         <div class="row">
             <div class="col-lg-6">
-                <form enctype="multipart/form-data" method="post" action="/predict/1">
+                <form enctype="multipart/form-data" method="post" action="/predict">
                     <div class="mb-3">
+                        <label for="user_select" class="form-label">Choose a user</label>
+                        <select id="user_select" name="user_select" class="form-select">
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.name }}</option>
+                            {% endfor %}
+                        </select>
+
                         <label for="file_upload" class="form-label">Upload image file for verify signature</label>
                         <input type="file" class="form-control" id="file_upload" name="file_upload"/>
                     </div>
@@ -27,7 +29,7 @@
 
 {% if show_result %}
         <div class="row">
-            <div class="col">
+            <div class="col-lg-6">
                 <h1>Genuine: {{ probability }}%</h1>
             </div>
         </div>
@@ -35,7 +37,7 @@
 
 {% if has_error %}
         <div class="row">
-            <div class="col">
+            <div class="col-lg-6">
                 <h2>{{ error_message }}</h2>
             </div>
         </div>
