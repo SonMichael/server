@@ -74,19 +74,13 @@ def predict(user_id):
         return render_template('predict.html', has_error=True, error_message="File is empty")
 
     file.save(f"./temp/{secure_filename(filename)}")
-
     test_image = os.path.join(os.getcwd(), 'temp/' + filename)
 
     signature_service = SignatureService()
     signatures = signature_service.get_by_user_id(user_id)
-    store_images = [signature.path for signature in signatures]
+    genuine_images = [signature.path for signature in signatures]
 
-    result = []
-    for stored_image in store_images:
-        probability = tensorflow_service.predict((test_image, stored_image))
-        result.append(probability)
-    result = np.max(result)
-
+    result = tensorflow_service.batch_predict(test_image, genuine_images)
     return render_template('predict.html', show_result=True, probability=str(round(result * 100, 2)))
 
 if __name__ == 'app':

@@ -31,15 +31,6 @@ def read_image(path):
     image_white = cv.bitwise_not(thresh)
     return np.array(image_white).reshape(1, 150, 150, 1)
 
-def read_image_resnet(path):
-    image = cv.imread(path, cv.COLOR_BGR2RGB)
-    image_gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-    _, thresh = cv.threshold(image_gray, 0, 255, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
-    image_white = cv.bitwise_not(thresh)
-    image_white = cv.cvtColor(image_white, cv.COLOR_GRAY2RGB)
-    return image_white
-    # return np.repeat(image_white[..., np.newaxis], 3, -1)
-
 def read_image_by_tensorflow(path):
     image_content = tf.io.read_file(path)
     image = tf.image.decode_png(image_content, channels=1)
@@ -50,14 +41,20 @@ def predict(images_paths):
     image1 = read_image(image_path_1)
     image2 = read_image(image_path_2)
 
-    # image1_content = tf.io.read_file(image_path_1)
-    # image1 = tf.image.decode_png(image1_content, channels=1)
-    # image1 = tf.reshape(image1, [1, 150, 150, 1])
-
-    # image2_content = tf.io.read_file(image_path_2)
-    # image2 = tf.image.decode_png(image2_content, channels=1)
-    # image2 = tf.reshape(image2, [1, 150, 150, 1])
-
     model = load_model()
     result = model.predict([image1, image2])
     return result[0][0]
+
+def batch_predict(test_image_path, genuine_image_paths):
+    test_image = read_image(test_image_path)
+    genuine_images = [read_image(image) for image in genuine_image_paths]
+
+    genuine_images_length = len(genuine_images)
+    inputs = [np.zeros((genuine_images_length, 150, 150, 1)) for i in range(2)]
+    for i in range(genuine_images_length):
+        inputs[0][i, :, :, :] = genuine_images[i]
+        inputs[1][i, :, :, :] = test_image
+
+    model = load_model()
+    result = model.predict(inputs)
+    return result.max()
