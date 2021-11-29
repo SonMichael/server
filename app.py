@@ -1,13 +1,11 @@
 import os.path
 
-import numpy as np
 from flask import Flask, jsonify
 from flask import render_template
 from flask import request
 from werkzeug.utils import secure_filename
 
 from models.user import User
-from models.signature import Signature
 from services.user_service import UserService
 from services.signature_service import SignatureService
 from services import tensorflow_service
@@ -16,7 +14,7 @@ app = Flask(__name__)
 
 
 @app.route('/')
-def hello_world():  # put application's code here
+def hello_world():
     return 'Hello World!'
 
 
@@ -62,6 +60,27 @@ def get_signature_by_user_id(user_id):
     signatures = signature_service.get_by_user_id(user_id)
 
     return jsonify([ signature.to_json() for signature in signatures ])
+
+
+@app.route('/signature', methods=['GET', 'POST'])
+def add_signature_to_user():
+    user_service = UserService()
+    users = user_service.get_all_users()
+
+    if request.method == 'GET':
+        return render_template('signature.html', users=users)
+
+    file = request.files['file_upload']
+    filename = file.filename
+    if filename is None:
+        return render_template('signature.html', users=users, has_error=True, error_message="File is empty")
+
+    file_content = file.read()
+    user_id = request.form['user_select']
+    signature_service = SignatureService()
+    signature_service.add_signature(user_id, file_content)
+
+    return render_template('upload_success.html')
 
 @app.route("/predict", methods=['GET', 'POST'])
 def predict():

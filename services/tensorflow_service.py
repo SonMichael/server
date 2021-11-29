@@ -15,7 +15,7 @@ def contrastive_loss(y_true, y_pred):
 
 def load_model():
     if 'tensorflow_model' not in g:
-        saved_model_path = os.path.join(os.getcwd(), 'saved_model/1')
+        saved_model_path = os.path.join(os.getcwd(), 'saved_model/1_1')
         g.tensorflow_model = tf.keras.models.load_model(
             saved_model_path,
             custom_objects={"K": K, "contrastive_loss": contrastive_loss}
