@@ -52,6 +52,7 @@ def preproccess_image(image):
 
 def extract_signature(image):
     original_image = image.copy()
+    width, height, channels = image.shape
 
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     ret, thresh = cv.threshold(gray, 0, 127, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
@@ -64,9 +65,26 @@ def extract_signature(image):
     if len(contours) == 0:
         return original_image
 
-    contour = sorted(contours, key=cv.contourArea, reverse=True)[0]
-    x, y, w, h = cv.boundingRect(contour)
-    crop_image = original_image[y:y + h, x:x + w]
+    contours = sorted(contours, key=cv.contourArea, reverse=True)
+    x_start = width
+    y_start = height
+    x_end = 0
+    y_end = 0
+    for contour in contours:
+        x, y, w, h = cv.boundingRect(contour)
+        if x < x_start:
+            x_start = x
+
+        if y < y_start:
+            y_start = y
+
+        if (x + w) > x_end:
+            x_end = (x + w)
+
+        if (y + h) > y_end:
+            y_end = (y + h)
+
+    crop_image = original_image[y_start:y_end, x_start:x_end]
     return crop_image
 
 
