@@ -31,21 +31,6 @@ class SignatureService:
         self.connection.commit()
 
 
-def make_square_image(image):
-    height, width, channels = image.shape
-
-    # Create a black image
-    x = height if height > width else width
-    y = height if height > width else width
-    max_dimension = max(x, y)
-    white_square_background = np.full((max_dimension, max_dimension, 3), 255, np.uint8)
-
-    white_square_background[int((y - height) / 2):int(y - (y - height) / 2),
-    int((x - width) / 2):int(x - (x - width) / 2)] = image
-
-    return white_square_background
-
-
 def resize_image(image, size):
     return cv.resize(image, (size, size), interpolation=cv.INTER_AREA)
 
@@ -59,9 +44,45 @@ def save_image(user_id, image):
 
 
 def preproccess_image(image):
-    square_image = make_square_image(image)
-    resized_image = resize_image(square_image, 150)
-    return resized_image
+    image = extract_signature(image)
+    image = make_square_image(image)
+    image = resize_image(image, 150)
+    return image
+
+
+def extract_signature(image):
+    original_image = image.copy()
+
+    gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    ret, thresh = cv.threshold(gray, 0, 127, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
+
+    rect_kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
+    dilation = cv.dilate(thresh, rect_kernel, iterations=1)
+
+    contours, hierarchy = cv.findContours(dilation, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    if len(contours) == 0:
+        return original_image
+
+    contour = sorted(contours, key=cv.contourArea, reverse=True)[0]
+    x, y, w, h = cv.boundingRect(contour)
+    crop_image = original_image[y:y + h, x:x + w]
+    return crop_image
+
+
+def make_square_image(image):
+    height, width, channels = image.shape
+
+    # Create a black image
+    x = height if height > width else width
+    y = height if height > width else width
+    max_dimension = max(x, y)
+    white_square_background = np.full((max_dimension, max_dimension, channels), 255, np.uint8)
+
+    white_square_background[int((y - height) / 2):int(y - (y - height) / 2),
+    int((x - width) / 2):int(x - (x - width) / 2)] = image
+
+    return white_square_background
 
 
 def save_signature_image(user_id, file_content):
