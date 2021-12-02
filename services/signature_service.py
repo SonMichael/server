@@ -31,10 +31,6 @@ class SignatureService:
         self.connection.commit()
 
 
-def resize_image(image, size):
-    return cv.resize(image, (size, size), interpolation=cv.INTER_AREA)
-
-
 def save_image(user_id, image):
     now = datetime.now()
     date_time_formatted = now.strftime("_%Y_%m_%d_%H_%M_%S")
@@ -101,6 +97,10 @@ def make_square_image(image):
     int((x - width) / 2):int(x - (x - width) / 2)] = image
 
     return white_square_background
+
+
+def resize_image(image, size):
+    return cv.resize(image, (size, size), interpolation=cv.INTER_AREA)
 
 
 def save_signature_image(user_id, file_content):

@@ -13,14 +13,14 @@
                 <form enctype="multipart/form-data" method="post" action="/signature">
                     <div class="mb-3">
                         <label for="user_select" class="form-label">Choose a user</label>
-                        <select id="user_select" name="user_select" class="form-select">
+                        <select id="user_select" name="user_id" class="form-select">
                             {% for user in users %}
                                 <option value="{{ user.id }}">{{ user.name }}</option>
                             {% endfor %}
                         </select>
 
                         <label for="file_upload" class="form-label">Upload a genuine image</label>
-                        <input type="file" class="form-control" id="file_upload" name="file_upload"/>
+                        <input type="file" class="form-control" id="file_upload" name="signature"/>
                     </div>
                     <button type="submit" class="btn btn-primary">Add</button>
                 </form>

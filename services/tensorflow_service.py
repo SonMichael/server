@@ -5,6 +5,9 @@ import tensorflow as tf
 import tensorflow.keras.backend as K
 from flask import g
 
+from services.signature_service import preproccess_image
+
+
 def contrastive_loss(y_true, y_pred):
     margin = 1
     square_pred = tf.math.square(y_pred)
@@ -12,6 +15,7 @@ def contrastive_loss(y_true, y_pred):
     return tf.math.reduce_mean(
         (1 - y_true) * square_pred + (y_true) * margin_square
     )
+
 
 def load_model():
     if 'tensorflow_model' not in g:
@@ -25,16 +29,22 @@ def load_model():
 
 
 def read_image(path):
-    image = cv.imread(path, cv.COLOR_BGR2RGB)
+    image = cv.imread(path, cv.IMREAD_UNCHANGED)
+    # image_gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    # _, thresh = cv.threshold(image_gray, 0, 255, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
+    # image_white = cv.bitwise_not(thresh)
+
+    image = preproccess_image(image)
     image_gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-    _, thresh = cv.threshold(image_gray, 0, 255, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
-    image_white = cv.bitwise_not(thresh)
-    return np.array(image_white).reshape(1, 150, 150, 1)
+    width, height = image_gray.shape
+    return np.array(image_gray).reshape(1, width, height, 1)
+
 
 def read_image_by_tensorflow(path):
     image_content = tf.io.read_file(path)
     image = tf.image.decode_png(image_content, channels=1)
     return tf.reshape(image, [1, 150, 150, 1])
+
 
 def predict(images_paths):
     (image_path_1, image_path_2) = images_paths
@@ -42,8 +52,9 @@ def predict(images_paths):
     image2 = read_image(image_path_2)
 
     model = load_model()
-    result = model.predict([image1, image2])
+    result = model.handle_predict([image1, image2])
     return result[0][0]
+
 
 def batch_predict(test_image_path, genuine_image_paths):
     test_image = read_image(test_image_path)

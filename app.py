@@ -54,12 +54,13 @@ def get_user_by_id(id):
     user = user_service.get_user_by_id(id)
     return jsonify(user.to_json())
 
+
 @app.route('/signature/<user_id>', methods=['GET'])
 def get_signature_by_user_id(user_id):
     signature_service = SignatureService()
     signatures = signature_service.get_by_user_id(user_id)
 
-    return jsonify([ signature.to_json() for signature in signatures ])
+    return jsonify([signature.to_json() for signature in signatures])
 
 
 @app.route('/signature', methods=['GET', 'POST'])
@@ -70,41 +71,98 @@ def add_signature_to_user():
     if request.method == 'GET':
         return render_template('signature.html', users=users)
 
-    file = request.files['file_upload']
-    filename = file.filename
-    if filename is None:
-        return render_template('signature.html', users=users, has_error=True, error_message="File is empty")
+    file, has_error, error_message = verify_upload_file(request)
+    if has_error:
+        return render_template('signature.html', users=users, has_error=True, error_message=error_message)
 
     file_content = file.read()
-    user_id = request.form['user_select']
+    user_id = request.form['user_id']
     signature_service = SignatureService()
     signature_service.add_signature(user_id, file_content)
 
     return render_template('upload_success.html')
 
+
+@app.route('/api/signature', methods=['POST'])
+def add_signature_to_user_by_api():
+    file, has_error, error_message = verify_upload_file(request)
+    if has_error:
+        return jsonify({"error": error_message}), 400
+
+    file_content = file.read()
+    user_id = request.form['user_id']
+    signature_service = SignatureService()
+    signature_service.add_signature(user_id, file_content)
+
+    return jsonify({"error": None})
+
+
 @app.route("/predict", methods=['GET', 'POST'])
-def predict():
+def handle_predict():
     user_service = UserService()
     users = user_service.get_all_users()
 
     if request.method == 'GET':
         return render_template('predict.html', users=users)
 
-    file = request.files['file_upload']
-    filename = file.filename
-    if filename is None:
-        return render_template('predict.html', users=users, has_error=True, error_message="File is empty")
+    file, has_error, error_message = verify_upload_file(request)
+    if has_error:
+        return render_template('predict.html', users=users, has_error=True, error_message=error_message)
 
+    result = predict_signature(file)
+    return render_template('predict.html', users=users, show_result=True, probability=str(result))
+
+
+@app.route("/api/predict", methods=['POST'])
+def handle_predict_by_api():
+    file, has_error, error_message = verify_upload_file(request)
+
+    if has_error:
+        return jsonify({"error": error_message}), 400
+
+    result = predict_signature(file)
+    return jsonify({
+        "error": None,
+        "probability": str(result)
+    })
+
+
+if __name__ == 'app':
+    app.run(host="0.0.0.0")
+
+
+def predict_signature(file):
+    filename = file.filename
     file.save(f"./temp/{secure_filename(filename)}")
     test_image = os.path.join(os.getcwd(), 'temp/' + filename)
 
-    user_id = request.form['user_select']
+    user_id = request.form['user_id']
     signature_service = SignatureService()
     signatures = signature_service.get_by_user_id(user_id)
     genuine_images = [signature.path for signature in signatures]
 
     result = tensorflow_service.batch_predict(test_image, genuine_images)
-    return render_template('predict.html', users=users, show_result=True, probability=str(round(result * 100, 2)))
+    return round(result * 100, 2)
 
-if __name__ == 'app':
-    app.run()
+
+def verify_upload_file(input_request):
+    if 'signature' not in input_request.files:
+        return None, True, "No file part"
+
+    file = input_request.files['signature']
+    filename = file.filename
+    if not file or filename == '':
+        return file, True, "File is empty"
+
+    if not allowed_file(file.filename):
+        return file, True, "Only png and jpeg files are allowed"
+
+    return file, False, None
+
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
