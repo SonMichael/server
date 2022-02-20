@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 from database import database
 from models.signature import Signature
+from models.signature_request import SignatureRequest
 
 
 class SignatureService:
@@ -30,14 +31,67 @@ class SignatureService:
         cursor.execute(sql_query)
         self.connection.commit()
 
+    def add_signature_request(self, user_id, image_path, similarity, document_path):
+        sql_query = """
+        INSERT INTO signature_request(path, user_id, similarity, document_path)
+        VALUES('{}', {}, {}, '{}');
+        """.format(image_path, user_id, similarity, document_path)
+        cursor = self.connection.cursor()
+        cursor.execute(sql_query)
+        self.connection.commit()
+
+    def get_signature_requests(self):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+        SELECT r.id, r.path, r.user_id, r.similarity,
+         STRFTIME('%Y-%m-%d %H:%M:%S', r.created_date),
+         r.is_accepted, u.username, r.document_path, r.most_genuine_signature
+        FROM signature_request r LEFT JOIN user u on u.id = r.user_id
+        ORDER BY r.id DESC;
+        """)
+
+        signatures = []
+        for row in cursor.fetchall():
+            signature = SignatureRequest(
+                id=row[0],
+                path=row[1],
+                document_path=row[7],
+                user_id=row[2],
+                username=row[6],
+                similarity=row[3],
+                created_date=row[4],
+                is_accepted=row[5],
+                most_genuine_signature=row[8]
+            )
+            signatures.append(signature)
+
+        return signatures
+
+    def accept_request(self, request_id):
+        sql_query = """
+        UPDATE signature_request SET is_accepted = 1
+        WHERE id = {};
+        """.format(request_id)
+        cursor = self.connection.cursor()
+        cursor.execute(sql_query)
+        self.connection.commit()
+
 
 def save_image(user_id, image):
+    return _save_image(user_id, image, 'saved_images')
+
+
+def save_signature_request_image(user_id, image_path):
+    image = cv.imread(image_path, cv.IMREAD_UNCHANGED)
+    return _save_image(user_id, image, 'static/signature_request')
+
+
+def _save_image(user_id, image, save_folder):
     now = datetime.now()
-    date_time_formatted = now.strftime("_%Y_%m_%d_%H_%M_%S")
-    saved_file_path = f"./saved_images/" + str(user_id) + date_time_formatted + ".png"
+    date_time_formatted = now.strftime("%Y_%m_%d_%H_%M_%S")
+    saved_file_path = "./{0}/{1}_{2}.png".format(save_folder, user_id, date_time_formatted)
     cv.imwrite(saved_file_path, image)
     return saved_file_path
-
 
 def preproccess_image(image):
     image = extract_signature(image)

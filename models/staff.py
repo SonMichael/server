@@ -1,4 +1,4 @@
-class User:
+class Staff:
     def __init__(self, id=None, name=None, age=None, is_supervisor=0):
         self.id = id
         self.name = name
