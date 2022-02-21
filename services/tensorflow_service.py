@@ -67,5 +67,13 @@ def batch_predict(test_image_path, genuine_image_paths):
         inputs[1][i, :, :, :] = test_image
 
     model = load_model()
-    result = model.predict(inputs)
-    return result.max()
+    results = model.predict(inputs)
+
+    max_result = -1
+    max_index = -1
+    for index, result in enumerate(results):
+        if result.max() > max_result:
+            max_result = result.max()
+            max_index = index
+
+    return max_result, genuine_image_paths[max_index]

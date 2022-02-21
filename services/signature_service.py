@@ -31,11 +31,11 @@ class SignatureService:
         cursor.execute(sql_query)
         self.connection.commit()
 
-    def add_signature_request(self, user_id, image_path, similarity, document_path):
+    def add_signature_request(self, user_id, image_path, similarity, document_path, best_fit_image_path):
         sql_query = """
-        INSERT INTO signature_request(path, user_id, similarity, document_path)
-        VALUES('{}', {}, {}, '{}');
-        """.format(image_path, user_id, similarity, document_path)
+        INSERT INTO signature_request(path, user_id, similarity, document_path, most_genuine_signature)
+        VALUES('{}', {}, {}, '{}', '{}');
+        """.format(image_path, user_id, similarity, document_path, best_fit_image_path)
         cursor = self.connection.cursor()
         cursor.execute(sql_query)
         self.connection.commit()

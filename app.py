@@ -182,12 +182,12 @@ def predict_signature(signature_file, document_file):
     signatures = signature_service.get_by_user_id(user_id)
     genuine_images = [signature.path for signature in signatures]
 
-    result = tensorflow_service.batch_predict(signature_test_image, genuine_images)
+    result, best_fit_image_path = tensorflow_service.batch_predict(signature_test_image, genuine_images)
     result = round(result * 100, 2)
 
     signature_image_save_path = save_signature_request_image(user_id, signature_test_image)
     document_image_save_path = save_signature_request_image(user_id, document_test_image)
-    signature_service.add_signature_request(user_id, signature_image_save_path, result, document_image_save_path)
+    signature_service.add_signature_request(user_id, signature_image_save_path, result, document_image_save_path, best_fit_image_path)
 
     return result
 
