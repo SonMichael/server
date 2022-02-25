@@ -25,3 +25,10 @@ class UserService:
         if row is None:
             return None
         return User(id=row[0], name=row[1], age=row[3], is_supervisor=row[4])
+
+    def add_customer(self, customer):
+        sql_query = "INSERT INTO customer(name, age) VALUES('{}', {});".format(customer.name, customer.age)
+        cursor = self.connection.cursor()
+        cursor.execute(sql_query)
+        self.connection.commit()
+        return cursor.lastrowid

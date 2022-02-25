@@ -57,6 +57,19 @@ def get_all_users():
     return jsonify([user.to_json() for user in users])
 
 
+@app.route("/api/user", methods=['POST'])
+def add_customer():
+    name = request.form['name']
+    age = request.form['age']
+    customer_service = UserService()
+    customer = User(name=name, age=age)
+    new_id = customer_service.add_customer(customer)
+
+    return {
+        "id": new_id,
+    }
+
+
 @app.route("/api/login", methods=['POST'])
 def login_api():
     username = request.form['username']
@@ -64,12 +77,13 @@ def login_api():
     staff_service = StaffService()
     user = staff_service.login(username, password)
     if user is None:
-        return jsonify({ "error": "Wrong username or password"}), 400
+        return jsonify({"error": "Wrong username or password"}), 400
 
     return jsonify({
         "error": None,
         "staff": user.to_json()
     })
+
 
 @app.route("/user/<id>")
 def get_user_by_id(id):
@@ -169,6 +183,7 @@ def accept_request():
 
     return jsonify({"error": None})
 
+
 if __name__ == 'app':
     app.run(host="0.0.0.0")
 
@@ -187,7 +202,8 @@ def predict_signature(signature_file, document_file):
 
     signature_image_save_path = save_signature_request_image(user_id, signature_test_image)
     document_image_save_path = save_signature_request_image(user_id, document_test_image)
-    signature_service.add_signature_request(user_id, signature_image_save_path, result, document_image_save_path, best_fit_image_path)
+    signature_service.add_signature_request(user_id, signature_image_save_path, result, document_image_save_path,
+                                            best_fit_image_path)
 
     return result
 
