@@ -4,6 +4,7 @@ from datetime import datetime
 from database import database
 from models.signature import Signature
 from models.signature_request import SignatureRequest
+from services.Constants import IMAGE_WIDTH, IMAGE_HEIGHT
 
 
 class SignatureService:
@@ -78,7 +79,7 @@ class SignatureService:
 
 
 def save_image(user_id, image):
-    return _save_image(user_id, image, 'saved_images')
+    return _save_image(user_id, image, './static/saved_images')
 
 
 def save_signature_request_image(user_id, image_path):
@@ -93,16 +94,17 @@ def _save_image(user_id, image, save_folder):
     cv.imwrite(saved_file_path, image)
     return saved_file_path
 
+
 def preproccess_image(image):
-    image = extract_signature(image)
-    image = make_square_image(image)
-    image = resize_image(image, 150)
+    # TODO: Fix this
+    # image = extract_signature(image)
+    image = resize_image(image)
     return image
 
 
 def extract_signature(image):
     original_image = image.copy()
-    width, height, channels = image.shape
+    width, height = image.shape
 
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     ret, thresh = cv.threshold(gray, 0, 127, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
@@ -138,23 +140,8 @@ def extract_signature(image):
     return crop_image
 
 
-def make_square_image(image):
-    height, width, channels = image.shape
-
-    # Create a black image
-    x = height if height > width else width
-    y = height if height > width else width
-    max_dimension = max(x, y)
-    white_square_background = np.full((max_dimension, max_dimension, channels), 255, np.uint8)
-
-    white_square_background[int((y - height) / 2):int(y - (y - height) / 2),
-    int((x - width) / 2):int(x - (x - width) / 2)] = image
-
-    return white_square_background
-
-
-def resize_image(image, size):
-    return cv.resize(image, (size, size), interpolation=cv.INTER_AREA)
+def resize_image(image):
+    return cv.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT), interpolation=cv.INTER_LINEAR)
 
 
 def save_signature_image(user_id, file_content):

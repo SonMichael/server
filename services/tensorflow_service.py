@@ -2,69 +2,75 @@ import os.path
 import cv2 as cv
 import numpy as np
 import tensorflow as tf
-import tensorflow.keras.backend as K
+from keras import backend as K
 from flask import g
 
 from services.signature_service import preproccess_image
 
 
-def contrastive_loss(y_true, y_pred):
-    margin = 1
-    square_pred = tf.math.square(y_pred)
-    margin_square = tf.math.square(tf.math.maximum(margin - (y_pred), 0))
-    return tf.math.reduce_mean(
-        (1 - y_true) * square_pred + (y_true) * margin_square
-    )
+# def contrastive_loss(y_true, y_pred):
+#     margin = 1
+#     square_pred = tf.math.square(y_pred)
+#     margin_square = tf.math.square(tf.math.maximum(margin - (y_pred), 0))
+#     return tf.math.reduce_mean(
+#         (1 - y_true) * square_pred + (y_true) * margin_square
+#     )
+
+def euclidean_distance(vectors):
+    # unpack the vectors into separate lists
+    (x, y) = vectors
+    # compute the sum of squared distances between the vectors
+    sum_squared = K.sum(K.square(x - y), axis=1, keepdims=True)
+    # return the euclidean distance between the vectors
+    return K.sqrt(K.maximum(sum_squared, K.epsilon()))
+
+
+def contrastive_loss(y, prediction, margin=1):
+    # explicitly cast the true class label data type to the predicted
+    # class label data type (otherwise we run the risk of having two
+    # separate data types, causing TensorFlow to error out)
+    y = tf.cast(y, prediction.dtype)
+    # calculate the contrastive loss between the true labels and
+    # the predicted labels
+    squared_predictions = K.square(prediction)
+    squared_margin = K.square(K.maximum(margin - prediction, 0))
+    return K.mean(y * squared_predictions + (1 - y) * squared_margin)
 
 
 def load_model():
     if 'tensorflow_model' not in g:
-        saved_model_path = os.path.join(os.getcwd(), 'saved_model/1_1')
+        saved_model_path = os.path.join(os.getcwd(), 'saved_model/4')
         g.tensorflow_model = tf.keras.models.load_model(
             saved_model_path,
-            custom_objects={"K": K, "contrastive_loss": contrastive_loss}
+            custom_objects={
+                "K": K,
+                "euclidean_distance": euclidean_distance,
+                "contrastive_loss": contrastive_loss
+                # "contrastive_loss": contrastive_loss
+            }
         )
 
     return g.tensorflow_model
 
 
 def read_image(path):
-    image = cv.imread(path, cv.IMREAD_UNCHANGED)
-    # image_gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-    # _, thresh = cv.threshold(image_gray, 0, 255, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
-    # image_white = cv.bitwise_not(thresh)
-
+    image = cv.imread(path, cv.IMREAD_GRAYSCALE)
     image = preproccess_image(image)
-    image_gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-    width, height = image_gray.shape
-    return np.array(image_gray).reshape(1, width, height, 1)
-
-
-def read_image_by_tensorflow(path):
-    image_content = tf.io.read_file(path)
-    image = tf.image.decode_png(image_content, channels=1)
-    return tf.reshape(image, [1, 150, 150, 1])
-
-
-def predict(images_paths):
-    (image_path_1, image_path_2) = images_paths
-    image1 = read_image(image_path_1)
-    image2 = read_image(image_path_2)
-
-    model = load_model()
-    result = model.handle_predict([image1, image2])
-    return result[0][0]
-
+    gray_image = cv.bitwise_not(image)
+    normalized_image = gray_image / 255.0
+    (height, width) = image.shape
+    return np.array(normalized_image).reshape(height, width, 1)
 
 def batch_predict(test_image_path, genuine_image_paths):
     test_image = read_image(test_image_path)
     genuine_images = [read_image(image) for image in genuine_image_paths]
 
     genuine_images_length = len(genuine_images)
-    inputs = [np.zeros((genuine_images_length, 150, 150, 1)) for i in range(2)]
+    (height, width, _) = test_image.shape
+    inputs = [np.zeros((genuine_images_length, height, width, 1)) for i in range(2)]
     for i in range(genuine_images_length):
-        inputs[0][i, :, :, :] = genuine_images[i]
-        inputs[1][i, :, :, :] = test_image
+        inputs[0][i] = test_image
+        inputs[1][i] = genuine_images[i]
 
     model = load_model()
     results = model.predict(inputs)
