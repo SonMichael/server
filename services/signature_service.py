@@ -79,7 +79,7 @@ class SignatureService:
 
 
 def save_image(user_id, image):
-    return _save_image(user_id, image, './static/saved_images')
+    return _save_image(user_id, image, 'static/saved_images')
 
 
 def save_signature_request_image(user_id, image_path):
