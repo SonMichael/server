@@ -1,4 +1,5 @@
 import os.path
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from flask import Flask, jsonify
 from flask import render_template

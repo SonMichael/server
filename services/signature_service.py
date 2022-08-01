@@ -4,7 +4,8 @@ from datetime import datetime
 from database import database
 from models.signature import Signature
 from models.signature_request import SignatureRequest
-from services.Constants import IMAGE_WIDTH, IMAGE_HEIGHT
+from services.Constants import IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_WIDTH_V2, IMAGE_HEIGHT_v2
+from services.helper import isV1
 
 
 class SignatureService:
@@ -98,8 +99,25 @@ def _save_image(user_id, image, save_folder):
 def preproccess_image(image):
     # TODO: Fix this
     # image = extract_signature(image)
-    image = resize_image(image)
-    return image
+    if isV1():
+        return resize_image(image)
+    return preprocess_image_v2(image)
+
+def convert_to_gray(img):
+    if(len(img.shape) == 2):
+        return img
+    return cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+def preprocess_image_v2(img):
+    gray = convert_to_gray(img)
+    # Apply dilation and erosion to remove some noise
+    kernel = np.ones((1, 1), np.uint8)
+    img = cv.dilate(gray, kernel, iterations=1)
+    img = cv.erode(gray, kernel, iterations=1)
+
+    imgResize = cv.resize(img,(IMAGE_WIDTH_V2, IMAGE_HEIGHT_v2))
+    adaptive_threshold = cv.adaptiveThreshold(imgResize, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY,85,11)
+    return adaptive_threshold
 
 
 def extract_signature(image):
