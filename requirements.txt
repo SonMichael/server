@@ -1,5 +1,0 @@
-Flask===2.1.0
-Flask-Cors==3.0.8
-tensorflow==2.5.0
-opencv-python==3.4.13.47
-Keras-Preprocessing==1.1.2
