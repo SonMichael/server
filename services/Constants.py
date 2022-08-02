@@ -4,3 +4,12 @@ IMAGE_HEIGHT = 155
 IMAGE_WIDTH_V2 = 94
 IMAGE_HEIGHT_v2 = 94
 API_VERSION_V1 = 'v1'
+CLASSES_V2 = {
+    1: 0,
+    4: 1,
+    5: 2,
+    6: 3,
+}
+CONFIGS = {
+    'API_VERSION': 'API_VERSION'
+}

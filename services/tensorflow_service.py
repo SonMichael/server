@@ -6,6 +6,8 @@ from keras import backend as K
 from flask import g
 
 from services.signature_service import preproccess_image
+from services.helper import isV1
+from services.Constants import  CLASSES_V2
 
 
 # def contrastive_loss(y_true, y_pred):
@@ -36,30 +38,46 @@ def contrastive_loss(y, prediction, margin=1):
     squared_margin = K.square(K.maximum(margin - prediction, 0))
     return K.mean(y * squared_predictions + (1 - y) * squared_margin)
 
+def get_model():
+    if isV1():
+        saved_model_path = os.path.join(os.getcwd(), 'saved_model/4')
+        tensorflow_model = tf.keras.models.load_model(
+                saved_model_path,
+                custom_objects={
+                    "K": K,
+                    "euclidean_distance": euclidean_distance,
+                    "contrastive_loss": contrastive_loss
+                    # "contrastive_loss": contrastive_loss
+                }
+            )
+        return tensorflow_model
+    saved_model_path = os.path.join(os.getcwd(), 'saved_model/v2')
+    return tf.keras.models.load_model(saved_model_path)
+    
 
 def load_model():
     if 'tensorflow_model' not in g:
-        saved_model_path = os.path.join(os.getcwd(), 'saved_model/4')
-        g.tensorflow_model = tf.keras.models.load_model(
-            saved_model_path,
-            custom_objects={
-                "K": K,
-                "euclidean_distance": euclidean_distance,
-                "contrastive_loss": contrastive_loss
-                # "contrastive_loss": contrastive_loss
-            }
-        )
+        
+        g.tensorflow_model = get_model()
 
     return g.tensorflow_model
 
 
 def read_image(path):
+    if not isV1():
+        return get_image_v2(path)
     image = cv.imread(path, cv.IMREAD_GRAYSCALE)
     image = preproccess_image(image)
     gray_image = cv.bitwise_not(image)
     normalized_image = gray_image / 255.0
     (height, width) = image.shape
     return np.array(normalized_image).reshape(height, width, 1)
+
+def get_image_v2(path):
+    image = cv.imread(path)
+    image = (image[...,::-1].astype(np.float32)) / 255.0
+    image = np.expand_dims(image,axis = 0 )
+    return image
 
 def batch_predict(test_image_path, genuine_image_paths):
     test_image = read_image(test_image_path)
@@ -83,3 +101,11 @@ def batch_predict(test_image_path, genuine_image_paths):
             max_index = index
 
     return max_result, genuine_image_paths[max_index]
+
+def predict_v2(test_image_path, user_id):
+    test_image = read_image(test_image_path)
+    model = load_model()
+    classes = model.predict(test_image)
+    label = CLASSES_V2[user_id]
+    return classes[0][label]
+

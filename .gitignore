@@ -7,3 +7,4 @@ saved_images
 __pycache__
 *.sql
 *.sqlite
+.DS_Store
