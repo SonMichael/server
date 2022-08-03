@@ -4,7 +4,7 @@ from datetime import datetime
 from database import database
 from models.signature import Signature
 from models.signature_request import SignatureRequest
-from services.Constants import IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_WIDTH_V2, IMAGE_HEIGHT_v2
+from services.Constants import IMAGE_WIDTH, IMAGE_HEIGHT, IMAGE_WIDTH_V2, IMAGE_HEIGHT_V2
 from services.helper import isV1
 
 
@@ -115,7 +115,7 @@ def preprocess_image_v2(img):
     img = cv.dilate(gray, kernel, iterations=1)
     img = cv.erode(gray, kernel, iterations=1)
 
-    imgResize = cv.resize(img,(IMAGE_WIDTH_V2, IMAGE_HEIGHT_v2))
+    imgResize = cv.resize(img,(IMAGE_WIDTH_V2, IMAGE_HEIGHT_V2))
     adaptive_threshold = cv.adaptiveThreshold(imgResize, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY,85,11)
     return adaptive_threshold
 

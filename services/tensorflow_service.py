@@ -106,6 +106,6 @@ def predict_v2(test_image_path, user_id):
     test_image = read_image(test_image_path)
     model = load_model()
     classes = model.predict(test_image)
-    label = CLASSES_V2[user_id]
-    return classes[0][label]
+    index = CLASSES_V2[user_id]
+    return classes[0][index]
 

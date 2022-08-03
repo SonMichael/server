@@ -217,8 +217,9 @@ def predict_signature(signature_file, document_file):
     if isV1():
         result, best_fit_image_path = tensorflow_service.batch_predict(signature_test_image, genuine_images)
     else:
+        if len(genuine_images) == 0:
+            return 0
         result, best_fit_image_path = tensorflow_service.predict_v2(signature_test_image, int(user_id)), genuine_images[0]
-        
     result = round(result * 100, 2)
 
     signature_image_save_path = save_signature_request_image(user_id, signature_test_image)

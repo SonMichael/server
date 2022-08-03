@@ -13,14 +13,14 @@
                 <form enctype="multipart/form-data" method="post" action="/config">
                     <div class="mb-3">
                         <label for="user_select" class="form-label">Choose</label>
-                        <select id="user_select" name="key" class="form-select">
+                        <select style="margin-bottom: 15px" id="user_select" name="key" class="form-select">
                             {% for item in configs %}
                                 <option value="{{ item.key }}">{{ item.key }}</option>
+                                <label for="file_upload" class="form-label">Value</label>
+                                <input type="text" class="form-control" name="value" value="{{ item.value}}"/>
                             {% endfor %}
                         </select>
 
-                        <label for="file_upload" class="form-label">Value</label>
-                        <input type="text" class="form-control" name="value"/>
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
