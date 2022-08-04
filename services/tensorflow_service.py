@@ -106,6 +106,8 @@ def predict_v2(test_image_path, user_id):
     test_image = read_image(test_image_path)
     model = load_model()
     classes = model.predict(test_image)
+    if user_id not in CLASSES_V2:
+        return 0
     index = CLASSES_V2[user_id]
     return classes[0][index]
 
