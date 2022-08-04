@@ -1,0 +1,18 @@
+name: tf
+channels:
+  - defaults
+dependencies:
+  - ca-certificates
+  - certifi
+  - openssl=1.1.1k
+  - pip=21.1.2
+  - python=3.7.10
+  - setuptools=52.0.0
+  - sqlite=3.35.4
+  - wheel=0.36.2
+  - pip:
+    - flask===2.1.0
+    - flask-cors==3.0.8
+    - opencv-python==3.4.13.47
+    - tensorflow==2.7.0
+prefix: /opt/conda/envs/tf

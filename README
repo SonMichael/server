@@ -1,0 +1,31 @@
+
+## I.  Set up environment
+
+- Step 1:
+- Add 4gb ram for docker
+- docker-compose build
+- docker-compose up
+- docker-compose exec bert bash
+    + conda env create -f environment.yml
+    + conda init bash
+    + re-start docker-compose
+    + conda config --set auto_activate_base false
+- python name.py
+
+- Option (can run when install conda success):
+    + conda config --set auto_activate_base false (disable auto activate in bash)
+    + conda env list (check env in conda)
+    + conda activate bert
+    + conda deactivate
+    + conda create -n python_3.7 python=3.7 (create virtual env)
+    + conda list (check libs in conda)
+    + conda install beautifulsoup4 (install lib)
+    + conda search beautifulsoup4 (search lib)
+    + pip show pickle5 (show version of package)
+    + pip list (show list version)
+    + conda env update --file environment.yml --prune (--prune uninstalls dependencies which were removed from environment.yml)
+    + conda env update --name bert --file environment.yml --prune
+    + docker swarm init (if we want use swarm for docker)
+    + docker stats --all (check status of containers)
+
+

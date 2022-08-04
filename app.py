@@ -1,4 +1,5 @@
 import os.path
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from flask import Flask, jsonify
 from flask import render_template
@@ -8,8 +9,14 @@ from werkzeug.utils import secure_filename
 from models.user import User
 from services.staff_service import StaffService
 from services.user_service import UserService
+from services.config_service import ConfigService
+from models.config import Config
 from services.signature_service import SignatureService, save_signature_request_image
 from services import tensorflow_service
+from services.signature_service import preproccess_image
+from services.helper import isV1
+import cv2 as cv
+import numpy as np
 
 app = Flask(__name__)
 
@@ -133,6 +140,16 @@ def add_signature_to_user_by_api():
 
     return jsonify({"error": None}), 201
 
+@app.route("/config", methods=['GET', 'POST'])
+def handle_config():
+    service = ConfigService()
+
+    if request.method == 'GET':
+        data = service.get_all_configs()
+        return render_template('config.html', configs=data)
+    config = Config(request.form['key'], request.form['value'])
+    service.update_config(config)
+    return render_template('update_success.html')
 
 @app.route("/predict", methods=['GET', 'POST'])
 def handle_predict():
@@ -196,8 +213,13 @@ def predict_signature(signature_file, document_file):
     signature_service = SignatureService()
     signatures = signature_service.get_by_user_id(user_id)
     genuine_images = [signature.path for signature in signatures]
-
-    result, best_fit_image_path = tensorflow_service.batch_predict(signature_test_image, genuine_images)
+    result, best_fit_image_path = 0, ""
+    if isV1():
+        result, best_fit_image_path = tensorflow_service.batch_predict(signature_test_image, genuine_images)
+    else:
+        if len(genuine_images) == 0:
+            return 0
+        result, best_fit_image_path = tensorflow_service.predict_v2(signature_test_image, int(user_id)), genuine_images[0]
     result = round(result * 100, 2)
 
     signature_image_save_path = save_signature_request_image(user_id, signature_test_image)
@@ -209,10 +231,21 @@ def predict_signature(signature_file, document_file):
 
 
 def save_image_in_temp(image_file):
-    filename = image_file.filename
-    image_file.save(f"./temp/{secure_filename(filename)}")
-    return os.path.join(os.getcwd(), 'temp/' + filename)
+    if isV1():
+        filename = image_file.filename
+        image_file.save(f"./temp/{secure_filename(filename)}")
+        return os.path.join(os.getcwd(), 'temp/' + filename)
+        
+    return save_image_in_temp_v2(image_file)
+    
 
+def save_image_in_temp_v2(image_file):
+    filename = image_file.filename
+    file_content = image_file.read()
+    file_content = cv.imdecode(np.fromstring(file_content, np.uint8), cv.IMREAD_UNCHANGED)
+    image = preproccess_image(file_content)
+    cv.imwrite(f"./temp/{secure_filename(filename)}", image)
+    return os.path.join(os.getcwd(), 'temp/' + filename)
 
 def verify_upload_file(input_request, field='signature'):
     if field not in input_request.files:
